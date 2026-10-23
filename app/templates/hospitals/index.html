@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Hospital Directory{% endblock %}
+{% block page_title %}Trauma & Medical Facility Directory{% endblock %}
+
+{% block content %}
+<div class="panel" style="margin-bottom: 20px;">
+  <div class="panel-header" style="flex-wrap: wrap; gap: 12px;">
+    <!-- Search & Filter Controls -->
+    <form method="GET" action="{{ url_for('hospitals.index') }}" style="display: flex; gap: 10px; flex-wrap: wrap; flex: 1;">
+      <input 
+        type="text" 
+        name="search" 
+        class="form-control" 
+        placeholder="Search hospital name or address..." 
+        value="{{ search }}" 
+        style="max-width: 260px;"
+      >
+
+      <select name="service" class="form-control" style="max-width: 180px;">
+        <option value="">All Clinical Services</option>
+        {% for svc in available_services %}
+          <option value="{{ svc }}" {% if service_filter == svc %}selected{% endif %}>{{ svc }} Facility</option>
+        {% endfor %}
+      </select>
+
+      <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+      {% if search or service_filter or has_custom_origin %}
+        <a href="{{ url_for('hospitals.index') }}" class="btn btn-secondary btn-sm">Reset</a>
+      {% endif %}
+    </form>
+
+    <div style="font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+      <span>Reference Origin:</span>
+      <span style="font-family: monospace; color: var(--accent-teal);">{{ "%.4f"|format(origin_lat) }}, {{ "%.4f"|format(origin_lon) }}</span>
+    </div>
+  </div>
+
+  <div style="background: rgba(245, 158, 11, 0.08); border-bottom: 1px solid rgba(245, 158, 11, 0.2); padding: 10px 20px; font-size: 11px; color: var(--accent-amber);">
+    <strong>🏥 Directory Disclaimer:</strong> Geographic proximity does not guarantee emergency room acceptance, inpatient bed availability, or specialized treatment capability. All entries represent verified demonstration facilities for the Bengaluru area.
+  </div>
+
+  <div class="table-container" style="border: none; border-radius: 0;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Facility Name</th>
+          <th>Address</th>
+          <th>Emergency Helpline</th>
+          <th>Clinical Services</th>
+          <th>Proximity Distance</th>
+          <th>Estimated ETA</th>
+          <th>Registry Tag</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for hosp in hospitals %}
+          <tr>
+            <td style="font-weight: 700; color: #fff;">
+              {{ hosp.name }}
+            </td>
+            <td style="font-size: 12px; color: var(--text-secondary); max-width: 240px;">
+              {{ hosp.address }}
+            </td>
+            <td style="font-family: monospace; font-size: 12px; color: var(--text-muted);">
+              {{ hosp.contact_number }}
+            </td>
+            <td>
+              {% for s in hosp.services.split(',') %}
+                <span class="badge" style="background: rgba(59, 130, 246, 0.12); color: #60a5fa; font-size: 10px; margin: 1px;">
+                  {{ s.strip() }}
+                </span>
+              {% endfor %}
+            </td>
+            <td>
+              <span style="font-size: 14px; font-weight: 700; color: var(--accent-teal);">
+                {{ hosp.distance_km }} km
+              </span>
+            </td>
+            <td>
+              <span style="font-size: 12px; color: var(--text-muted);">
+                ~{{ hosp.estimated_minutes }} mins
+              </span>
+            </td>
+            <td>
+              <span class="badge badge-out-of-service" style="font-size: 10px;">
+                Demonstration Data
+              </span>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <div class="empty-state-title">No Medical Centers Found</div>
+                <div class="empty-state-desc">No hospitals matched the current query or specialty filter.</div>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

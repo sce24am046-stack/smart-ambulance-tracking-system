@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Emergency Queue{% endblock %}
+{% block page_title %}Emergency Incident Command Queue{% endblock %}
+
+{% block content %}
+<div class="panel" style="margin-bottom: 20px;">
+  <div class="panel-header" style="flex-wrap: wrap; gap: 12px;">
+    <!-- Filter Bar -->
+    <form method="GET" action="{{ url_for('emergencies.index') }}" style="display: flex; gap: 10px; flex-wrap: wrap; flex: 1;">
+      <input 
+        type="text" 
+        name="search" 
+        class="form-control" 
+        placeholder="Search code, patient, location..." 
+        value="{{ search }}" 
+        style="max-width: 240px;"
+      >
+
+      <select name="status" class="form-control" style="max-width: 150px;">
+        <option value="">All Statuses</option>
+        {% for st in allowed_statuses %}
+          <option value="{{ st }}" {% if status_filter == st %}selected{% endif %}>{{ st }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="priority" class="form-control" style="max-width: 140px;">
+        <option value="">All Priorities</option>
+        {% for pr in allowed_priorities %}
+          <option value="{{ pr }}" {% if priority_filter == pr %}selected{% endif %}>{{ pr }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="category" class="form-control" style="max-width: 170px;">
+        <option value="">All Categories</option>
+        {% for cat in allowed_categories %}
+          <option value="{{ cat }}" {% if category_filter == cat %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+
+      <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+      {% if search or status_filter or priority_filter or category_filter %}
+        <a href="{{ url_for('emergencies.index') }}" class="btn btn-secondary btn-sm">Reset</a>
+      {% endif %}
+    </form>
+
+    <a href="{{ url_for('emergencies.create') }}" class="btn btn-danger btn-sm">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Register New Call
+    </a>
+  </div>
+
+  <div class="table-container" style="border: none; border-radius: 0;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Priority</th>
+          <th>Reference Code</th>
+          <th>Patient Name</th>
+          <th>Phone</th>
+          <th>Category</th>
+          <th>Pickup Location</th>
+          <th>Assigned Unit</th>
+          <th>Status</th>
+          <th>Registered</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in requests %}
+          <tr>
+            <td>
+              <span class="badge badge-{{ req.priority.lower() }}">
+                {{ req.priority }}
+              </span>
+            </td>
+            <td>
+              <a href="{{ url_for('emergencies.detail', id=req.id) }}" style="font-weight: 700; font-family: monospace;">
+                {{ req.request_code }}
+              </a>
+            </td>
+            <td style="font-weight: 600;">{{ req.patient_name }}</td>
+            <td style="color: var(--text-muted); font-size: 12px;">{{ req.contact_number }}</td>
+            <td>
+              <span style="font-size: 12px; color: var(--text-secondary);">
+                {{ req.emergency_category }}
+              </span>
+            </td>
+            <td style="max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              {{ req.pickup_address }}
+            </td>
+            <td>
+              {% if req.ambulance_code %}
+                <span style="font-weight: 700; font-family: monospace; color: var(--accent-teal);">
+                  {{ req.ambulance_code }}
+                </span>
+              {% else %}
+                <span style="color: var(--accent-red); font-weight: 600; font-size: 11px;">Unassigned</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge badge-{{ req.status.lower().replace(' ', '-') }}">
+                {{ req.status }}
+              </span>
+            </td>
+            <td style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">
+              {{ req.created_at }}
+            </td>
+            <td>
+              <a href="{{ url_for('emergencies.detail', id=req.id) }}" class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 11px;">
+                Manage
+              </a>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="10">
+              <div class="empty-state">
+                <div class="empty-state-title">No Emergency Requests Found</div>
+                <div class="empty-state-desc">No records match the active search or filter criteria.</div>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if total_pages > 1 %}
+    <div style="padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border-subtle);">
+      <span style="font-size: 12px; color: var(--text-muted);">
+        Page {{ page }} of {{ total_pages }} ({{ total_count }} total requests)
+      </span>
+      <div style="display: flex; gap: 6px;">
+        {% if page > 1 %}
+          <a href="{{ url_for('emergencies.index', page=page-1, search=search, status=status_filter, priority=priority_filter, category=category_filter) }}" class="btn btn-secondary btn-sm">← Previous</a>
+        {% endif %}
+        {% if page < total_pages %}
+          <a href="{{ url_for('emergencies.index', page=page+1, search=search, status=status_filter, priority=priority_filter, category=category_filter) }}" class="btn btn-secondary btn-sm">Next →</a>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

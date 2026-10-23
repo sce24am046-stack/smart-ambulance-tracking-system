@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ ambulance.ambulance_code }}{% endblock %}
+{% block page_title %}Edit Vehicle — {{ ambulance.ambulance_code }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+        <span>Update Ambulance Records</span>
+      </div>
+      <a href="{{ url_for('ambulances.detail', id=ambulance.id) }}" class="btn btn-secondary btn-sm">Cancel</a>
+    </div>
+
+    <div class="panel-body">
+      <form method="POST" action="{{ url_for('ambulances.edit', id=ambulance.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label for="ambulance_code" class="form-label required">Ambulance Code</label>
+            <input 
+              type="text" 
+              id="ambulance_code" 
+              name="ambulance_code" 
+              class="form-control" 
+              value="{{ ambulance.ambulance_code }}" 
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="vehicle_number" class="form-label required">Vehicle Registration</label>
+            <input 
+              type="text" 
+              id="vehicle_number" 
+              name="vehicle_number" 
+              class="form-control" 
+              value="{{ ambulance.vehicle_number }}" 
+              required
+            >
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label for="driver_name" class="form-label required">Driver / Paramedic Name</label>
+            <input 
+              type="text" 
+              id="driver_name" 
+              name="driver_name" 
+              class="form-control" 
+              value="{{ ambulance.driver_name }}" 
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="driver_phone" class="form-label required">Driver Contact Number</label>
+            <input 
+              type="tel" 
+              id="driver_phone" 
+              name="driver_phone" 
+              class="form-control" 
+              value="{{ ambulance.driver_phone }}" 
+              required
+            >
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label for="ambulance_type" class="form-label required">Ambulance Type</label>
+            <select id="ambulance_type" name="ambulance_type" class="form-control" required>
+              {% for tp in allowed_types %}
+                <option value="{{ tp }}" {% if ambulance.ambulance_type == tp %}selected{% endif %}>{{ tp }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="status" class="form-label required">Availability Status</label>
+            <select id="status" name="status" class="form-control" required>
+              {% for st in allowed_statuses %}
+                <option value="{{ st }}" {% if ambulance.status == st %}selected{% endif %}>{{ st }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label for="latitude" class="form-label required">Current Latitude</label>
+            <input 
+              type="number" 
+              step="any" 
+              id="latitude" 
+              name="latitude" 
+              class="form-control" 
+              value="{{ ambulance.latitude }}" 
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="longitude" class="form-label required">Current Longitude</label>
+            <input 
+              type="number" 
+              step="any" 
+              id="longitude" 
+              name="longitude" 
+              class="form-control" 
+              value="{{ ambulance.longitude }}" 
+              required
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="operational_notes" class="form-label">Operational Notes</label>
+          <textarea 
+            id="operational_notes" 
+            name="operational_notes" 
+            class="form-control"
+          >{{ ambulance.operational_notes or '' }}</textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+          <a href="{{ url_for('ambulances.detail', id=ambulance.id) }}" class="btn btn-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Live Tracking Map{% endblock %}
+{% block page_title %}Geospatial Command Center — Live Fleet Telemetry{% endblock %}
+
+{% block extra_css %}
+<style>
+  .map-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 16px;
+    height: calc(100vh - var(--topbar-height) - 48px);
+  }
+  @media (max-width: 900px) {
+    .map-layout {
+      grid-template-columns: 1fr;
+      height: auto;
+    }
+  }
+  .map-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: var(--shadow-card);
+  }
+  .map-toolbar {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: var(--bg-surface);
+  }
+  #trackingMap {
+    flex: 1;
+    min-height: 480px;
+    width: 100%;
+    background: #0f172a;
+  }
+  .map-side-panel {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-card);
+    overflow-y: auto;
+  }
+  .map-legend-bar {
+    padding: 8px 16px;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--bg-surface);
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  .selected-amb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding: 5px 0;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+  }
+  .detail-row span { color: var(--text-muted); }
+  .detail-row strong { color: var(--text-primary); }
+  .active-incident-box {
+    margin-top: 14px;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    font-size: 11px;
+    color: #f8fafc;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="map-layout">
+  <!-- Map Main Console -->
+  <div class="map-card">
+    <!-- Map Toolbar -->
+    <div class="map-toolbar">
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <span class="badge badge-high" style="font-size: 10px;">
+          DEMO MODE — SIMULATED LOCATIONS (Bengaluru Area)
+        </span>
+
+        <select id="focusAmbulanceSelect" class="form-control" style="max-width: 190px; padding: 4px 8px; font-size: 12px;">
+          <option value="">Focus on Vehicle...</option>
+          {% for a in ambulances %}
+            <option value="{{ a.data.id }}">{{ a.data.ambulance_code }} ({{ a.data.status }})</option>
+          {% endfor %}
+        </select>
+
+        <button type="button" class="btn btn-secondary btn-sm" id="fitBoundsBtn" title="Fit all vehicles in view">
+          Auto-Fit Radar
+        </button>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button type="button" class="btn btn-secondary btn-sm" id="simToggleBtn" title="Simulate fleet movement ticks">
+          <span>▶</span> Simulate Fleet Movement
+        </button>
+
+        <button type="button" class="btn btn-secondary btn-sm" id="refreshMapBtn" title="Fetch latest coordinates">
+          ↻ Refresh
+        </button>
+
+        <span style="font-size: 10px; color: var(--text-muted); font-family: monospace;" id="lastUpdatedClock">
+          Live
+        </span>
+      </div>
+    </div>
+
+    <!-- Active Simulation Notice Banner -->
+    <div id="simActiveBanner" style="display: none; background: rgba(239, 68, 68, 0.15); border-bottom: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 16px; font-size: 11px; color: #ef4444; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="pulse-dot-red"></span>
+        <strong>DEMO SIMULATION ACTIVE:</strong> Real-time coordinate ticks advancing vehicles toward active calls.
+      </div>
+      <span style="font-size: 10px; color: var(--text-muted);">Simulated Demonstration Only</span>
+    </div>
+
+    <!-- Offline Tile Fallback Banner -->
+    <div id="mapTileError" style="display: none; background: rgba(245, 158, 11, 0.12); border-bottom: 1px solid rgba(245, 158, 11, 0.3); padding: 8px 16px; font-size: 11px; color: var(--accent-amber);">
+      <strong>Notice:</strong> OpenStreetMap tile servers are currently taking longer to respond. Vector coordinates and markers continue operating normally.
+    </div>
+
+    <!-- Leaflet Map Container -->
+    <div id="trackingMap"></div>
+
+    <!-- Map Legend Bar -->
+    <div class="map-legend-bar" role="region" aria-label="Map Marker and Route Legend">
+      <div class="legend-item">
+        <div class="legend-dot" style="background: #10b981;"></div>
+        <span>Available Unit</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background: #f59e0b;"></div>
+        <span>Busy / En Route</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background: #64748b;"></div>
+        <span>Out of Service</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background: #0284c7; border-radius: 2px;"></div>
+        <span>Hospital / Trauma</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background: #ef4444;"></div>
+        <span>Emergency Incident</span>
+      </div>
+      <div class="legend-item">
+        <div style="width: 20px; height: 4px; background: #14b8a6; border-radius: 2px;"></div>
+        <span>Fastest Route</span>
+      </div>
+      <div class="legend-item">
+        <div style="width: 20px; height: 0; border-top: 3px dashed #94a3b8;"></div>
+        <span>Alternative Route</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Side Inspection Panel -->
+  <div class="map-side-panel">
+    <div class="panel-header">
+      <div class="panel-title" style="font-size: 13px;">Telemetry Inspector</div>
+    </div>
+    <div class="panel-body" id="selectedAmbulancePanel" style="padding: 16px;" aria-live="polite">
+      <div style="text-align: center; color: var(--text-muted); padding: 24px 10px;">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 8px; opacity: 0.6;">
+          <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+        </svg>
+        <div style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">Select Vehicle Marker</div>
+        <p style="font-size: 11px; margin-top: 4px;">
+          Click any ambulance marker on the radar or choose from the dropdown above to inspect live telemetry.
+        </p>
+      </div>
+    </div>
+
+    <!-- Telemetry Architecture Note -->
+    <div style="padding: 14px; border-top: 1px solid var(--border-subtle); background: var(--bg-surface); font-size: 11px; color: var(--text-muted); line-height: 1.5;">
+      <strong style="color: var(--text-secondary);">GPS Integration Architecture:</strong><br>
+      Physical vehicle hardware sends periodic HTTP PUT payloads to <code>/api/v1/ambulances/&lt;id&gt;/location</code> authenticated with an <code>X-API-Key</code> header.
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/tracking_map.js') }}"></script>
+{% endblock %}

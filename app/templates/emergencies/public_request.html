@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency Request Registration — {{ APP_NAME }}</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/logo.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <style>
+    body {
+      background: #070b14;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .public-header {
+      background: #0f172a;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .form-wrapper {
+      max-width: 680px;
+      margin: 40px auto;
+      padding: 0 20px;
+      width: 100%;
+    }
+    .emergency-card {
+      background: #0f172a;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+    .emergency-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: var(--accent-red);
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+    .disclaimer-banner {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      font-size: 12px;
+      color: #f59e0b;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <header class="public-header">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="ResQ Pulse" width="32" height="32">
+      <div>
+        <div style="font-weight: 800; font-size: 15px; color: #fff;">{{ APP_NAME }}</div>
+        <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">Public Emergency Booking Portal</div>
+      </div>
+    </div>
+    <a href="{{ url_for('landing') }}" class="btn btn-secondary btn-sm">Landing Page</a>
+  </header>
+
+  <main class="form-wrapper">
+    <div class="emergency-card">
+      <div style="margin-bottom: 24px;">
+        <span class="badge badge-high" style="margin-bottom: 8px;">EMERGENCY INTAKE PROTOCOL</span>
+        <h1 style="font-size: 22px; font-weight: 800; color: #fff;">Register Emergency Ambulance Call</h1>
+        <p style="font-size: 13px; color: #94a3b8; margin-top: 4px;">
+          Provide patient information and incident location. Dispatch coordinators prioritize and allocate the closest emergency medical unit.
+        </p>
+      </div>
+
+      <div class="disclaimer-banner">
+        <strong>⚠️ College Mini-Project Simulation Notice:</strong><br>
+        This portal is a demonstration system. In an authentic medical emergency, immediately call the official emergency helpline (108/112 in India or 911). No real ambulances will be deployed from this form.
+      </div>
+
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div style="margin-bottom: 20px;">
+            {% for category, message in messages %}
+              <div class="toast toast-{{ category }}" style="margin-bottom: 8px;">
+                <span>•</span>
+                <span>{{ message }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('emergencies.public_register') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label for="patient_name" class="form-label required">Patient / Caller Name</label>
+            <input 
+              type="text" 
+              id="patient_name" 
+              name="patient_name" 
+              class="form-control" 
+              placeholder="e.g. Rahul Sharma" 
+              value="{{ form.patient_name or '' }}" 
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="contact_number" class="form-label required">Callback Phone Number</label>
+            <input 
+              type="tel" 
+              id="contact_number" 
+              name="contact_number" 
+              class="form-control" 
+              placeholder="10-digit mobile number" 
+              value="{{ form.contact_number or '' }}" 
+              required
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="emergency_category" class="form-label required">Emergency Category</label>
+          <select id="emergency_category" name="emergency_category" class="form-control" required>
+            {% for cat in categories %}
+              <option value="{{ cat }}" {% if form.emergency_category == cat %}selected{% endif %}>{{ cat }}</option>
+            {% endfor %}
+          </select>
+          <div class="form-hint">Cardiac and Accident reports automatically trigger top priority triage.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="pickup_address" class="form-label required">Exact Pickup Address & Landmarks</label>
+          <input 
+            type="text" 
+            id="pickup_address" 
+            name="pickup_address" 
+            class="form-control" 
+            placeholder="Street address, building name, cross roads, Bengaluru..." 
+            value="{{ form.pickup_address or '' }}" 
+            required
+          >
+        </div>
+
+        <!-- Coordinates with Geolocation button -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label for="pickup_latitude" class="form-label required">Pickup Latitude</label>
+            <input 
+              type="number" 
+              step="any" 
+              id="pickup_latitude" 
+              name="pickup_latitude" 
+              class="form-control" 
+              value="{{ form.pickup_latitude or '12.9716' }}" 
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="pickup_longitude" class="form-label required">Pickup Longitude</label>
+            <input 
+              type="number" 
+              step="any" 
+              id="pickup_longitude" 
+              name="pickup_longitude" 
+              class="form-control" 
+              value="{{ form.pickup_longitude or '77.5946' }}" 
+              required
+            >
+          </div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <button type="button" class="btn btn-secondary btn-sm" id="geoBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polygon points="12 2 15 8 22 9 17 14 18 21 12 17 6 21 7 14 2 9 9 8 12 2"></polygon>
+            </svg>
+            Auto-Detect GPS Location
+          </button>
+        </div>
+
+        <div class="form-group">
+          <label for="notes" class="form-label">Symptoms / Chief Complaints / Scene Situation</label>
+          <textarea 
+            id="notes" 
+            name="notes" 
+            class="form-control" 
+            placeholder="Describe symptoms, patient consciousness, bleeding, injuries..."
+          >{{ form.notes or '' }}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-danger" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 700; margin-top: 10px;">
+          Dispatch Ambulance Immediately
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    document.getElementById("geoBtn").addEventListener("click", function() {
+      if (navigator.geolocation) {
+        this.textContent = "Detecting coordinates...";
+        navigator.geolocation.getCurrentPosition(
+          function(pos) {
+            document.getElementById("pickup_latitude").value = pos.coords.latitude.toFixed(5);
+            document.getElementById("pickup_longitude").value = pos.coords.longitude.toFixed(5);
+            document.getElementById("geoBtn").textContent = "✓ GPS Coordinates Acquired";
+          },
+          function(err) {
+            alert("Geolocation permission denied or unavailable. Using default coordinates.");
+            document.getElementById("geoBtn").textContent = "Auto-Detect GPS Location";
+          }
+        );
+      } else {
+        alert("Geolocation is not supported by your browser.");
+      }
+    });
+  </script>
+</body>
+</html>

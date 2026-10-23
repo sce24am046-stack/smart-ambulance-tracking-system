@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency Request Transmitted — {{ APP_NAME }}</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/logo.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <style>
+    body {
+      background: #070b14;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .success-card {
+      max-width: 600px;
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid rgba(20, 184, 166, 0.4);
+      border-radius: var(--radius-lg);
+      padding: 36px 32px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      text-align: center;
+    }
+    .check-circle {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(20, 184, 166, 0.15);
+      border: 2px solid var(--accent-teal);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      color: var(--accent-teal);
+    }
+    .ref-code-box {
+      background: #1e293b;
+      border: 1px dashed rgba(255, 255, 255, 0.15);
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      margin: 20px 0;
+    }
+    .advice-box {
+      text-align: left;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      margin: 20px 0;
+      font-size: 12px;
+      color: #94a3b8;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="success-card">
+    <div class="check-circle">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+    </div>
+
+    <span class="badge badge-available" style="font-size: 12px; padding: 4px 10px;">TRANSMISSION CONFIRMED</span>
+    <h1 style="font-size: 22px; font-weight: 800; color: #fff; margin-top: 10px;">Emergency Call Logged</h1>
+    <p style="font-size: 13px; color: #94a3b8; margin-top: 6px;">
+      Your emergency request has entered the dispatch coordination queue.
+    </p>
+
+    <div class="ref-code-box">
+      <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Your Incident Reference Code</div>
+      <div style="font-size: 26px; font-weight: 800; font-family: monospace; color: var(--accent-teal); letter-spacing: 1px; margin-top: 4px;">
+        {{ request.request_code }}
+      </div>
+      <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+        Category: {{ request.emergency_category }} &bull; Priority: <strong style="color: #ef4444;">{{ request.priority }}</strong>
+      </div>
+    </div>
+
+    <div class="advice-box">
+      <strong style="color: #f8fafc;">Immediate First Responder Advice:</strong>
+      <ul style="margin-top: 6px; padding-left: 18px;">
+        <li>Keep your phone line free in case paramedics call for landmark confirmation.</li>
+        <li>Ensure someone is positioned at the main gate/junction to guide the ambulance.</li>
+        <li>If an accident or spinal trauma is suspected, do not move the patient unless immediate scene danger exists.</li>
+      </ul>
+    </div>
+
+    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+      {% if request.tracking_token %}
+        <a href="{{ url_for('emergencies.track_by_token', token=request.tracking_token) }}" class="btn btn-primary">
+          Track Ambulance Status Live →
+        </a>
+      {% else %}
+        <a href="{{ url_for('emergencies.public_track', request_code=request.request_code) }}" class="btn btn-primary">
+          Track Ambulance Status Live →
+        </a>
+      {% endif %}
+      <a href="{{ url_for('landing') }}" class="btn btn-secondary">
+        Return to Home
+      </a>
+    </div>
+  </div>
+</body>
+</html>

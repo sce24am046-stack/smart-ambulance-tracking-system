@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>429 Too Many Requests — {{ APP_NAME }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #070b14; text-align: center; padding: 20px; }
+    .err-card { max-width: 480px; background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 36px; }
+  </style>
+</head>
+<body>
+  <div class="err-card">
+    <div style="font-size: 48px; font-weight: 800; color: var(--accent-amber);">429</div>
+    <h2 style="font-size: 18px; color: #fff; margin: 12px 0;">Rate Limit Protection Triggered</h2>
+    <p style="font-size: 13px; color: #94a3b8; margin-bottom: 24px;">
+      Too many failed login requests detected. Please wait 5 minutes before re-attempting authentication.
+    </p>
+    <a href="{{ url_for('auth.login') }}" class="btn btn-secondary">Back to Login</a>
+  </div>
+</body>
+</html>

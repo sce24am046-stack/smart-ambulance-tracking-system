@@ -1,0 +1,463 @@
+{% extends "base.html" %}
+
+{% block title %}Emergency {{ request.request_code }}{% endblock %}
+{% block page_title %}Incident Command — {{ request.request_code }}{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+  <!-- Left Column: Details & Smart Dispatch -->
+  <div>
+    <!-- Incident Summary Panel -->
+    <div class="panel" style="margin-bottom: 20px;">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span style="font-size: 18px; font-weight: 800; font-family: monospace;">{{ request.request_code }}</span>
+          <span class="badge badge-{{ request.priority.lower() }}">{{ request.priority }} Priority</span>
+          <span class="badge badge-{{ request.status.lower().replace(' ', '-') }}">{{ request.status }}</span>
+        </div>
+        <span style="font-size: 11px; color: var(--text-muted);">
+          Registered: {{ request.created_at }}
+        </span>
+      </div>
+
+      <div class="panel-body">
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px;">
+          <div class="stat-card" style="padding: 12px;">
+            <div class="stat-title">Patient / Caller</div>
+            <div style="font-size: 15px; font-weight: 700; color: #fff; margin-top: 4px;">{{ request.patient_name }}</div>
+            <div style="font-size: 12px; color: var(--text-muted); font-family: monospace;">{{ request.contact_number }}</div>
+          </div>
+
+          <div class="stat-card" style="padding: 12px;">
+            <div class="stat-title">Emergency Classification</div>
+            <div style="font-size: 15px; font-weight: 700; color: #fff; margin-top: 4px;">{{ request.emergency_category }}</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Suggested Priority: {{ request.suggested_priority }}</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Pickup Location</div>
+          <div style="font-size: 13px; color: var(--text-primary); margin-top: 4px; font-weight: 600;">
+            {{ request.pickup_address }}
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); font-family: monospace; margin-top: 2px;">
+            GPS Coordinates: {{ "%.5f"|format(request.pickup_latitude) }}, {{ "%.5f"|format(request.pickup_longitude) }}
+          </div>
+        </div>
+
+        {% if request.notes %}
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Triage Notes</div>
+            <div style="padding: 12px; background: var(--bg-surface); border-radius: var(--radius-sm); font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+              {{ request.notes }}
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Currently Assigned Ambulance -->
+        {% if request.assigned_ambulance_id %}
+          <div style="padding: 16px; background: rgba(20, 184, 166, 0.08); border: 1px solid rgba(20, 184, 166, 0.3); border-radius: var(--radius-sm); margin-top: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <span class="badge badge-available">Dispatched Vehicle</span>
+                <h4 style="font-size: 16px; font-weight: 800; font-family: monospace; color: #fff; margin-top: 4px;">
+                  {{ request.ambulance_code }} ({{ request.ambulance_type }})
+                </h4>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                  Driver: <strong>{{ request.driver_name }}</strong> &bull; Contact: {{ request.driver_phone }} &bull; Plate: {{ request.vehicle_number }}
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                  Dispatched at: {{ request.assigned_at or 'Pending' }}
+                  {% if request.arrived_at %}&bull; Arrived scene: {{ request.arrived_at }}{% endif %}
+                  {% if request.completed_at %}&bull; Handover completed: {{ request.completed_at }}{% endif %}
+                </div>
+              </div>
+              <a href="{{ url_for('ambulances.detail', id=request.assigned_ambulance_id) }}" class="btn btn-secondary btn-sm">
+                View Vehicle
+              </a>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- SMART DISPATCH ASSIST ENGINE -->
+    <div class="panel" style="margin-bottom: 20px;">
+      <div class="panel-header">
+        <div class="panel-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--accent-teal);">
+            <polygon points="12 2 15 8 22 9 17 14 18 21 12 17 6 21 7 14 2 9 9 8 12 2"></polygon>
+          </svg>
+          <span>SMART DISPATCH ASSIST — Candidate Fleet Recommendations</span>
+        </div>
+      </div>
+
+      <div class="panel-body">
+        <!-- Mandated Preliminary Estimate Warning Banner -->
+        <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 16px; font-size: 11px; color: var(--accent-amber); line-height: 1.4;">
+          <strong>⚠️ Dispatch Engine Advisory:</strong> These are preliminary estimates using straight-line distance and assumed speed. Actual travel time requires routing data and real traffic information.
+        </div>
+
+        {% if request.status in ('Completed', 'Cancelled') %}
+          <div style="font-size: 13px; color: var(--text-muted); padding: 16px; text-align: center;">
+            This emergency incident is already marked as <strong>{{ request.status }}</strong>. Dispatch allocation is closed.
+          </div>
+        {% elif candidates %}
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            {% for cand in candidates %}
+              <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(20, 184, 166, 0.15); color: var(--accent-teal); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px;">
+                    #{{ cand.rank }}
+                  </div>
+                  <div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 15px; font-weight: 800; font-family: monospace; color: #fff;">{{ cand.ambulance_code }}</span>
+                      <span class="badge badge-available" style="font-size: 10px;">{{ cand.status }}</span>
+                      <span style="font-size: 11px; color: var(--text-muted);">{{ cand.ambulance_type }}</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 3px;">
+                      {{ cand.explanation }}
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                      Driver: {{ cand.driver_name }} ({{ cand.driver_phone }}) &bull; Plate: {{ cand.vehicle_number }}
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 16px;">
+                  <div style="text-align: right;">
+                    <div style="font-size: 18px; font-weight: 800; color: var(--accent-teal);">{{ cand.distance_km }} km</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">~{{ cand.estimated_minutes }} mins ETA</div>
+                  </div>
+
+                  <form method="POST" action="{{ url_for('emergencies.assign_ambulance', id=request.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="ambulance_id" value="{{ cand.id }}">
+                    <button 
+                      type="submit" 
+                      class="btn btn-primary btn-sm" 
+                      data-confirm="Dispatch and lock ambulance {{ cand.ambulance_code }} to emergency {{ request.request_code }}?"
+                    >
+                      Assign Unit
+                    </button>
+                  </form>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state" style="padding: 24px;">
+            <div class="empty-state-title">No Available Fleet Units</div>
+            <div class="empty-state-desc">
+              All ambulances in the fleet are currently engaged on active calls or undergoing maintenance. Free up a unit or inspect fleet health.
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Nearest Medical Facilities -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
+            <path d="M12 7v6M9 10h6"></path>
+          </svg>
+          <span>Nearest Trauma & Medical Centers</span>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">
+          Proximity ranking calculated from incident pickup coordinates:
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          {% for hosp in hospitals %}
+            <div style="background: var(--bg-surface); padding: 12px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: space-between;">
+              <div>
+                <div style="font-weight: 700; color: #fff; font-size: 13px;">{{ hosp.name }}</div>
+                <div style="font-size: 11px; color: var(--text-muted);">{{ hosp.address }} &bull; {{ hosp.contact_number }}</div>
+                <div style="font-size: 11px; color: var(--accent-teal); margin-top: 2px;">Facilities: {{ hosp.services }}</div>
+              </div>
+              <div style="text-align: right; min-width: 90px;">
+                <div style="font-size: 15px; font-weight: 700; color: #38bdf8;">{{ hosp.distance_km }} km</div>
+                <div style="font-size: 10px; color: var(--text-muted);">~{{ hosp.estimated_minutes }} mins</div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 10px; font-style: italic;">
+          * Geographic proximity does not guarantee emergency acceptance, bed availability, or specialized treatment capability.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: State Transitions, Priority Override, Public Tracking, Destination & Timeline -->
+  <div>
+    <!-- Public Live Tracking Access Panel -->
+    <div class="panel" style="margin-bottom: 20px;">
+      <div class="panel-header">
+        <div class="panel-title" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+          <span>Citizen Public Tracking</span>
+          {% if request.tracking_token_revoked %}
+            <span class="badge badge-high" style="font-size: 10px;">Access Revoked</span>
+          {% else %}
+            <span class="badge badge-available" style="font-size: 10px;">Live Active</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="panel-body">
+        {% if request.tracking_token %}
+          {% set track_url = url_for('emergencies.track_by_token', token=request.tracking_token, _external=True) %}
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label for="publicTrackUrlInput" class="form-label" style="font-size: 11px;">Public Tracking URL (Unguessable Token)</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="publicTrackUrlInput" class="form-control" value="{{ track_url }}" readonly style="font-family: monospace; font-size: 11px; background: var(--bg-surface);">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="copyPublicTrackLink()" title="Copy to clipboard">
+                Copy
+              </button>
+            </div>
+          </div>
+
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
+            {% if request.tracking_token_revoked %}
+              <div style="color: #ef4444; font-weight: 600;">Access revoked by dispatch. Public link returns HTTP 403 Forbidden.</div>
+            {% else %}
+              <div>Expires: <strong>{{ request.tracking_token_expires_at or 'Permanent' }}</strong></div>
+              <div style="margin-top: 4px;">
+                <a href="{{ track_url }}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-teal); font-weight: 600;">
+                  Open Public Tracking Page ↗
+                </a>
+              </div>
+            {% endif %}
+          </div>
+
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            {% if not request.tracking_token_revoked %}
+              <form method="POST" action="{{ url_for('emergencies.revoke_tracking_token', id=request.id) }}" style="flex: 1;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger btn-sm" style="width: 100%;" data-confirm="Revoke public tracking access? Visitors with this link will immediately receive Access Revoked.">
+                  Revoke Access
+                </button>
+              </form>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('emergencies.refresh_tracking_token', id=request.id) }}" style="flex: 1;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-secondary btn-sm" style="width: 100%;" data-confirm="Generate a new secure tracking token? Previous links will become invalid.">
+                {% if request.tracking_token_revoked %}Restore Access{% else %}Generate New Link{% endif %}
+              </button>
+            </form>
+          </div>
+
+          <div style="margin-top: 12px; padding: 8px 10px; background: rgba(59, 130, 246, 0.08); border-radius: var(--radius-sm); border: 1px solid rgba(59, 130, 246, 0.2); font-size: 10px; color: #93c5fd; line-height: 1.4;">
+            <strong>Privacy Safeguard:</strong> Patient names, phone numbers, and driver contact info are strictly excluded from public responses.
+          </div>
+        {% else %}
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">No tracking token exists yet for this incident.</div>
+          <form method="POST" action="{{ url_for('emergencies.refresh_tracking_token', id=request.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-primary btn-sm" style="width: 100%;">
+              Generate Public Tracking Link
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Fastest-Route Navigation & Destination Hospital Panel -->
+    <div class="panel" style="margin-bottom: 20px;">
+      <div class="panel-header">
+        <div class="panel-title">Fastest-Route & Destination Facility</div>
+      </div>
+      <div class="panel-body">
+        <!-- Destination Hospital Selection -->
+        <form method="POST" action="{{ url_for('emergencies.set_destination', id=request.id) }}" style="margin-bottom: 16px;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="form-group" style="margin-bottom: 8px;">
+            <label for="destinationHospSelect" class="form-label" style="font-size: 11px;">Receiving Trauma / Hospital</label>
+            <select id="destinationHospSelect" name="hospital_id" class="form-control" style="font-size: 12px;">
+              <option value="">-- No Destination Hospital Designated --</option>
+              {% for h in all_hospitals %}
+                <option value="{{ h.id }}" {% if request.destination_hospital_id == h.id %}selected{% endif %}>
+                  {{ h.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-secondary btn-sm" style="width: 100%;">
+            Set Receiving Facility
+          </button>
+        </form>
+
+        {% if request.destination_hospital_name %}
+          <div style="padding: 10px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: var(--radius-sm); margin-bottom: 14px;">
+            <div style="font-size: 11px; text-transform: uppercase; color: #38bdf8; font-weight: 700;">Designated Destination</div>
+            <div style="font-size: 13px; font-weight: 700; color: #fff; margin-top: 2px;">{{ request.destination_hospital_name }}</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">{{ request.destination_hospital_address }}</div>
+          </div>
+        {% endif %}
+
+        <!-- Active Route Navigation Telemetry -->
+        {% if request.assigned_ambulance_id %}
+          <div style="padding: 12px; background: var(--bg-surface); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary);">Navigation Route</span>
+              <span class="badge {% if request.route_traffic_aware %}badge-success{% else %}badge-secondary{% endif %}" style="font-size: 10px;">
+                {{ request.route_provider or 'OSRM Road' }}
+              </span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px;">
+              <div style="background: rgba(255, 255, 255, 0.03); padding: 8px; border-radius: 4px;">
+                <div style="font-size: 10px; color: var(--text-muted);">Road Distance</div>
+                <div style="font-size: 16px; font-weight: 800; color: var(--accent-teal);">
+                  {{ "%.1f"|format(request.route_distance_km or 0.0) }} km
+                </div>
+              </div>
+
+              <div style="background: rgba(255, 255, 255, 0.03); padding: 8px; border-radius: 4px;">
+                <div style="font-size: 10px; color: var(--text-muted);">Est. Arrival</div>
+                <div style="font-size: 16px; font-weight: 800; color: #38bdf8;">
+                  {{ eta_meta.eta_clock or ("%d min"|format(request.route_duration_minutes or 0)) }}
+                </div>
+              </div>
+            </div>
+
+            <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">
+              <div>Route Mode: <strong>{{ eta_meta.type_label }}</strong></div>
+              {% if request.route_last_calculated %}
+                <div>Last Computed: {{ request.route_last_calculated }}</div>
+              {% endif %}
+              <div style="margin-top: 4px; font-size: 10px; color: var(--text-secondary);">
+                {{ eta_meta.disclaimer }}
+              </div>
+            </div>
+          </div>
+
+          <form method="POST" action="{{ url_for('emergencies.recalculate_route_endpoint', id=request.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-secondary btn-sm" style="width: 100%;">
+              ↻ Recalculate Route & ETA
+            </button>
+          </form>
+        {% else %}
+          <div style="font-size: 11px; color: var(--text-muted); padding: 8px; text-align: center; background: var(--bg-surface); border-radius: var(--radius-sm);">
+            Assign an available ambulance above to compute driving polyline and road ETA.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Status Transition Control Panel -->
+    <div class="panel" style="margin-bottom: 20px;">
+      <div class="panel-header">
+        <div class="panel-title">Incident Lifecycle Control</div>
+      </div>
+      <div class="panel-body">
+        <form method="POST" action="{{ url_for('emergencies.update_status', id=request.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="form-group">
+            <label for="statusSelect" class="form-label">Transition Status</label>
+            <select id="statusSelect" name="status" class="form-control">
+              {% for st in allowed_statuses %}
+                <option value="{{ st }}" {% if request.status == st %}selected{% endif %}>{{ st }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <button 
+            type="submit" 
+            class="btn btn-secondary btn-sm" 
+            style="width: 100%;"
+            data-confirm="Transition incident status to the selected state?"
+          >
+            Update Incident Status
+          </button>
+        </form>
+
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 10px; line-height: 1.4;">
+          Note: Marking as <strong>Completed</strong> or <strong>Cancelled</strong> automatically releases the assigned ambulance back to <strong>Available</strong>.
+        </div>
+      </div>
+    </div>
+
+    <!-- Priority Override Panel -->
+    <div class="panel" style="margin-bottom: 20px;">
+      <div class="panel-header">
+        <div class="panel-title">Triage Priority Override</div>
+      </div>
+      <div class="panel-body">
+        <form method="POST" action="{{ url_for('emergencies.update_priority', id=request.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="form-group">
+            <label for="prioritySelect" class="form-label">Triage Level</label>
+            <select id="prioritySelect" name="priority" class="form-control">
+              {% for pr in allowed_priorities %}
+                <option value="{{ pr }}" {% if request.priority == pr %}selected{% endif %}>{{ pr }} Priority</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-secondary btn-sm" style="width: 100%;">
+            Override Priority
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Activity Log Timeline -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Call Coordination Timeline</div>
+      </div>
+      <div class="panel-body">
+        <div class="timeline">
+          {% for log in logs %}
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-time">{{ log.created_at }} &bull; {{ log.actor_username }}</div>
+              <div class="timeline-text">{{ log.description }}</div>
+            </div>
+          {% else %}
+            <div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 14px;">
+              No activity logs registered for this call.
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyPublicTrackLink() {
+  const input = document.getElementById("publicTrackUrlInput");
+  if (!input) return;
+  input.select();
+  input.setSelectionRange(0, 99999);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(input.value).then(() => {
+      if (typeof showToast === "function") {
+        showToast("Citizen tracking link copied to clipboard", "success");
+      } else {
+        alert("Citizen tracking link copied to clipboard!");
+      }
+    }).catch(() => {
+      document.execCommand("copy");
+      if (typeof showToast === "function") showToast("Citizen tracking link copied", "success");
+    });
+  } else {
+    document.execCommand("copy");
+    if (typeof showToast === "function") showToast("Citizen tracking link copied", "success");
+  }
+}
+</script>
+{% endblock %}

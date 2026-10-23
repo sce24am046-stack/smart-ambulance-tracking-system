@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Add Ambulance{% endblock %}
+{% block page_title %}Register Emergency Ambulance{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="1" y="3" width="15" height="13"></rect>
+          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+        </svg>
+        <span>Vehicle Specifications & Initial Telemetry</span>
+      </div>
+      <a href="{{ url_for('ambulances.index') }}" class="btn btn-secondary btn-sm">Cancel</a>
+    </div>
+
+    <div class="panel-body">
+      <form method="POST" action="{{ url_for('ambulances.add') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label for="ambulance_code" class="form-label required">Ambulance Code</label>
+            <input 
+              type="text" 
+              id="ambulance_code" 
+              name="ambulance_code" 
+              class="form-control" 
+              placeholder="e.g. AMB-107" 
+              value="{{ form.ambulance_code or '' }}" 
+              required
+            >
+            <div class="form-hint">Unique fleet identifier (e.g. AMB-XXX).</div>
+          </div>
+
+          <div class="form-group">
+            <label for="vehicle_number" class="form-label required">Vehicle Registration Number</label>
+            <input 
+              type="text" 
+              id="vehicle_number" 
+              name="vehicle_number" 
+              class="form-control" 
+              placeholder="e.g. KA-01-EA-7788" 
+              value="{{ form.vehicle_number or '' }}" 
+              required
+            >
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label for="driver_name" class="form-label required">Driver / Paramedic Name</label>
+            <input 
+              type="text" 
+              id="driver_name" 
+              name="driver_name" 
+              class="form-control" 
+              placeholder="Full Name" 
+              value="{{ form.driver_name or '' }}" 
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="driver_phone" class="form-label required">Driver Phone Number</label>
+            <input 
+              type="tel" 
+              id="driver_phone" 
+              name="driver_phone" 
+              class="form-control" 
+              placeholder="+91-98765-43210" 
+              value="{{ form.driver_phone or '' }}" 
+              required
+            >
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label for="ambulance_type" class="form-label required">Ambulance Capability</label>
+            <select id="ambulance_type" name="ambulance_type" class="form-control" required>
+              {% for tp in allowed_types %}
+                <option value="{{ tp }}" {% if form.ambulance_type == tp %}selected{% endif %}>{{ tp }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="status" class="form-label required">Initial Status</label>
+            <select id="status" name="status" class="form-control" required>
+              {% for st in allowed_statuses %}
+                <option value="{{ st }}" {% if (form.status or 'Available') == st %}selected{% endif %}>{{ st }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label for="latitude" class="form-label required">Base Latitude</label>
+            <input 
+              type="number" 
+              step="any" 
+              id="latitude" 
+              name="latitude" 
+              class="form-control" 
+              placeholder="12.9716" 
+              value="{{ form.latitude or '12.9716' }}" 
+              required
+            >
+            <div class="form-hint">Valid earthly range: -90.0 to +90.0</div>
+          </div>
+
+          <div class="form-group">
+            <label for="longitude" class="form-label required">Base Longitude</label>
+            <input 
+              type="number" 
+              step="any" 
+              id="longitude" 
+              name="longitude" 
+              class="form-control" 
+              placeholder="77.5946" 
+              value="{{ form.longitude or '77.5946' }}" 
+              required
+            >
+            <div class="form-hint">Valid earthly range: -180.0 to +180.0</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="operational_notes" class="form-label">Operational Notes & Medical Equipment</label>
+          <textarea 
+            id="operational_notes" 
+            name="operational_notes" 
+            class="form-control" 
+            placeholder="e.g. Equipped with cardiac defibrillator, pediatric ventilator, stretcher harness."
+          >{{ form.operational_notes or '' }}</textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+          <a href="{{ url_for('ambulances.index') }}" class="btn btn-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary">
+            Save Ambulance to Fleet
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

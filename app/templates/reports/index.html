@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Operational Reports{% endblock %}
+{% block page_title %}Operational Intelligence & Audit Reports{% endblock %}
+
+{% block content %}
+<!-- Filter & Export Header -->
+<div class="panel" style="margin-bottom: 20px;">
+  <div class="panel-header" style="flex-wrap: wrap; gap: 12px;">
+    <form method="GET" action="{{ url_for('reports.index') }}" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Date Range:</span>
+      <input type="date" name="start_date" class="form-control" value="{{ start_date }}" style="max-width: 150px; font-size: 12px;">
+      <span style="color: var(--text-muted);">to</span>
+      <input type="date" name="end_date" class="form-control" value="{{ end_date }}" style="max-width: 150px; font-size: 12px;">
+      <button type="submit" class="btn btn-secondary btn-sm">Filter Audit</button>
+      {% if start_date or end_date %}
+        <a href="{{ url_for('reports.index') }}" class="btn btn-secondary btn-sm">Reset</a>
+      {% endif %}
+    </form>
+
+    <a href="{{ url_for('reports.export_csv', start_date=start_date, end_date=end_date) }}" class="btn btn-primary btn-sm">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      Export Sanitized CSV Report
+    </a>
+  </div>
+</div>
+
+<!-- Breakdown Cards -->
+<div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-bottom: 24px;">
+  <!-- Requests by Status -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">Requests by Status</div>
+    </div>
+    <div class="panel-body">
+      {% for item in status_data %}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-subtle); font-size: 12px;">
+          <span class="badge badge-{{ item.status.lower().replace(' ', '-') }}">{{ item.status }}</span>
+          <strong style="color: #fff;">{{ item.count }}</strong>
+        </div>
+      {% else %}
+        <div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 16px;">
+          No data records for this date window.
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Requests by Priority -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">Requests by Triage Priority</div>
+    </div>
+    <div class="panel-body">
+      {% for item in priority_data %}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-subtle); font-size: 12px;">
+          <span class="badge badge-{{ item.priority.lower() }}">{{ item.priority }} Priority</span>
+          <strong style="color: #fff;">{{ item.count }}</strong>
+        </div>
+      {% else %}
+        <div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 16px;">
+          No data records for this date window.
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Requests by Category -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">Requests by Category</div>
+    </div>
+    <div class="panel-body">
+      {% for item in category_data %}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-subtle); font-size: 12px;">
+          <span style="color: var(--text-primary); font-weight: 600;">{{ item.emergency_category }}</span>
+          <strong style="color: var(--accent-teal);">{{ item.count }}</strong>
+        </div>
+      {% else %}
+        <div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 16px;">
+          No data records for this date window.
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Fleet Utilization Table -->
+<div class="panel">
+  <div class="panel-header">
+    <div class="panel-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="1" y="3" width="15" height="13"></rect>
+        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+      </svg>
+      <span>Fleet Deployment & Mission Utilization Audit</span>
+    </div>
+  </div>
+
+  <div class="table-container" style="border: none; border-radius: 0;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Vehicle Code</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Total Assigned Calls</th>
+          <th>Completed Missions</th>
+          <th>Telemetry State</th>
+          <th>Last GPS Update</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for amb in fleet_utilization %}
+          <tr>
+            <td style="font-weight: 700; font-family: monospace;">{{ amb.code }}</td>
+            <td style="font-size: 12px; color: var(--text-secondary);">{{ amb.type }}</td>
+            <td>
+              <span class="badge badge-{{ amb.status.lower().replace(' ', '-') }}">{{ amb.status }}</span>
+            </td>
+            <td style="font-weight: 700;">{{ amb.total_assigned }}</td>
+            <td style="font-weight: 700; color: var(--accent-teal);">{{ amb.completed_missions }}</td>
+            <td>
+              {% if amb.is_stale %}
+                <span class="badge badge-busy">Stale (>15m)</span>
+              {% else %}
+                <span class="badge badge-available">Fresh Ping</span>
+              {% endif %}
+            </td>
+            <td style="font-size: 11px; color: var(--text-muted);">{{ amb.last_update }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block title %}Operations Dashboard{% endblock %}
+{% block page_title %}Mission Control — Emergency Operations Dashboard{% endblock %}
+
+{% block content %}
+<!-- Quick Action Bar -->
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span class="badge badge-available" style="font-size: 12px; padding: 4px 10px;">
+      Fleet Availability: {{ availability_pct }}%
+    </span>
+    <span style="font-size: 12px; color: var(--text-muted);">
+      {{ available_ambulances }} of {{ total_ambulances }} vehicles ready for instant dispatch
+    </span>
+  </div>
+
+  <div style="display: flex; gap: 10px;">
+    <a href="{{ url_for('emergencies.create') }}" class="btn btn-danger btn-sm">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Register Emergency Call
+    </a>
+    <a href="{{ url_for('ambulances.add') }}" class="btn btn-secondary btn-sm">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="1" y="3" width="15" height="13"></rect>
+        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+      </svg>
+      Add Fleet Vehicle
+    </a>
+    <a href="{{ url_for('tracking.live_map') }}" class="btn btn-primary btn-sm">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+      </svg>
+      Open Live Radar
+    </a>
+  </div>
+</div>
+
+<!-- 8 Summary KPI Cards -->
+<div class="card-grid">
+  <!-- 1. Total Ambulances -->
+  <div class="stat-card accent-blue">
+    <div class="stat-header">
+      <span class="stat-title">Total Fleet</span>
+      <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="1" y="3" width="15" height="13"></rect>
+        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+        <circle cx="5.5" cy="18.5" r="2.5"></circle>
+        <circle cx="18.5" cy="18.5" r="2.5"></circle>
+      </svg>
+    </div>
+    <div class="stat-value">{{ total_ambulances }}</div>
+    <div class="stat-footer">Registered emergency vehicles</div>
+  </div>
+
+  <!-- 2. Available Ambulances -->
+  <div class="stat-card accent-teal">
+    <div class="stat-header">
+      <span class="stat-title">Available Units</span>
+      <div class="status-dot"></div>
+    </div>
+    <div class="stat-value" style="color: var(--accent-teal);">{{ available_ambulances }}</div>
+    <div class="stat-footer">Ready for immediate dispatch</div>
+  </div>
+
+  <!-- 3. Busy Ambulances -->
+  <div class="stat-card accent-amber">
+    <div class="stat-header">
+      <span class="stat-title">Busy / En Route</span>
+      <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+    </div>
+    <div class="stat-value" style="color: var(--accent-amber);">{{ busy_ambulances }}</div>
+    <div class="stat-footer">Engaged in active calls</div>
+  </div>
+
+  <!-- 4. Out of Service Ambulances -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-title">Out of Service</span>
+      <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+      </svg>
+    </div>
+    <div class="stat-value" style="color: var(--text-muted);">{{ out_of_service_ambulances }}</div>
+    <div class="stat-footer">Under maintenance or offline</div>
+  </div>
+
+  <!-- 5. Total Emergency Requests -->
+  <div class="stat-card accent-blue">
+    <div class="stat-header">
+      <span class="stat-title">Total Requests</span>
+      <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+      </svg>
+    </div>
+    <div class="stat-value">{{ total_requests }}</div>
+    <div class="stat-footer">All logged incident cases</div>
+  </div>
+
+  <!-- 6. Open Emergency Requests -->
+  <div class="stat-card accent-amber">
+    <div class="stat-header">
+      <span class="stat-title">Open Incidents</span>
+      <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+        <polyline points="2 17 12 22 22 17"></polyline>
+      </svg>
+    </div>
+    <div class="stat-value">{{ open_requests }}</div>
+    <div class="stat-footer">{{ pending_requests }} unassigned pending</div>
+  </div>
+
+  <!-- 7. High Priority Requests -->
+  <div class="stat-card accent-red">
+    <div class="stat-header">
+      <span class="stat-title">Critical / High</span>
+      <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+    </div>
+    <div class="stat-value" style="color: var(--accent-red);">{{ high_priority_requests }}</div>
+    <div class="stat-footer">Immediate triage priority</div>
+  </div>
+
+  <!-- 8. Average Recorded Response Time -->
+  <div class="stat-card accent-teal">
+    <div class="stat-header">
+      <span class="stat-title">Avg Response Time</span>
+      <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+      </svg>
+    </div>
+    <div class="stat-value">
+      {% if avg_response_time is not none %}
+        {{ avg_response_time }}<span style="font-size: 14px; font-weight: 500; color: var(--text-muted);"> min</span>
+      {% else %}
+        <span style="font-size: 16px; color: var(--text-muted);">No data</span>
+      {% endif %}
+    </div>
+    <div class="stat-footer">
+      {% if avg_response_time is not none %}
+        Calculated from recorded timestamps
+      {% else %}
+        Awaiting completed mission records
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Charts Split Row -->
+<div class="dashboard-grid">
+  <!-- Trend Chart Panel -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+        <span>7-Day Emergency Incident Trend</span>
+      </div>
+      <span style="font-size: 11px; color: var(--text-muted);">Daily Registrations</span>
+    </div>
+    <div class="panel-body" style="height: 240px;">
+      <canvas 
+        id="trendChart" 
+        data-labels='{{ trend_labels | tojson }}' 
+        data-points='{{ trend_data | tojson }}'>
+      </canvas>
+    </div>
+  </div>
+
+  <!-- Fleet Status Doughnut Chart Panel -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 2a10 10 0 0 1 10 10"></path>
+        </svg>
+        <span>Fleet Readiness Distribution</span>
+      </div>
+      <span style="font-size: 11px; color: var(--text-muted);">Current State</span>
+    </div>
+    <div class="panel-body" style="height: 240px;">
+      <canvas 
+        id="statusDoughnutChart" 
+        data-avail="{{ available_ambulances }}" 
+        data-busy="{{ busy_ambulances }}" 
+        data-out="{{ out_of_service_ambulances }}">
+      </canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Priority Queue & Activity Feed Row -->
+<div class="dashboard-grid">
+  <!-- Priority Queue Table -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span class="pulse-dot-red" style="margin-right: 4px;"></span>
+        <span>Active Priority Queue</span>
+      </div>
+      <a href="{{ url_for('emergencies.index') }}" class="btn btn-secondary btn-sm">
+        View All ({{ open_requests }})
+      </a>
+    </div>
+
+    <div class="table-container" style="border: none; border-radius: 0;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Priority</th>
+            <th>Code</th>
+            <th>Category</th>
+            <th>Pickup Location</th>
+            <th>Status</th>
+            <th>Assigned Unit</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in priority_queue %}
+            <tr>
+              <td>
+                <span class="badge badge-{{ req.priority.lower() }}">
+                  {{ req.priority }}
+                </span>
+              </td>
+              <td>
+                <a href="{{ url_for('emergencies.detail', id=req.id) }}" style="font-weight: 700; font-family: monospace;">
+                  {{ req.request_code }}
+                </a>
+              </td>
+              <td>{{ req.emergency_category }}</td>
+              <td style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ req.pickup_address }}
+              </td>
+              <td>
+                <span class="badge badge-{{ req.status.lower().replace(' ', '-') }}">
+                  {{ req.status }}
+                </span>
+              </td>
+              <td>
+                {% if req.ambulance_code %}
+                  <span style="font-weight: 600; color: var(--text-primary);">{{ req.ambulance_code }}</span>
+                {% else %}
+                  <span style="color: var(--accent-red); font-weight: 600;">Unassigned</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{{ url_for('emergencies.detail', id=req.id) }}" class="btn btn-primary btn-sm" style="padding: 3px 8px; font-size: 11px;">
+                  Dispatch Assist
+                </a>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="7">
+                <div class="empty-state" style="padding: 24px;">
+                  <div class="empty-state-title">Priority Queue Clear</div>
+                  <div class="empty-state-desc">No active emergency calls are currently pending dispatch.</div>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Operational Activity Feed -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+        <span>Operational Activity Log</span>
+      </div>
+    </div>
+    <div class="panel-body" style="padding: 16px 20px;">
+      <div class="timeline">
+        {% for act in recent_activity %}
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-time">{{ act.created_at }} &bull; {{ act.actor_username }}</div>
+            <div class="timeline-text">{{ act.description }}</div>
+          </div>
+        {% else %}
+          <div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 20px;">
+            No operational events recorded yet.
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+{% endblock %}

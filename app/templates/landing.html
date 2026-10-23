@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ APP_NAME }} — {{ APP_SUBTITLE }} | {{ APP_TAGLINE }}</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/logo.svg') }}">
+
+  <!-- Leaflet CSS for Map Preview -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="landing-body">
+
+  <!-- Navigation Bar -->
+  <header class="landing-nav">
+    <div class="landing-brand">
+      <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="ResQ Pulse Emblem" width="36" height="36">
+      <div>
+        <div style="font-weight: 800; font-size: 16px; letter-spacing: 0.5px; color: #fff;">{{ APP_NAME }}</div>
+        <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px;">{{ APP_SUBTITLE }}</div>
+      </div>
+    </div>
+
+    <div class="landing-nav-links">
+      <a href="#features" class="landing-nav-link">Features</a>
+      <a href="#workflow" class="landing-nav-link">Workflow</a>
+      <a href="#tech" class="landing-nav-link">Architecture</a>
+      <a href="{{ url_for('emergencies.public_register') }}" class="btn btn-hero-primary" style="padding: 8px 16px; font-size: 12px;">
+        Book Emergency
+      </a>
+      <a href="{{ url_for('auth.login') }}" class="btn btn-secondary btn-sm">
+        Dispatcher Login
+      </a>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div>
+      <div class="hero-tagline-badge">
+        <span class="pulse-dot-red"></span>
+        <span>RAPID DISPATCH & TELEMETRY PROTOCOL</span>
+      </div>
+
+      <h1 class="hero-title">
+        Every Second Matters.<br>
+        <span>Real-Time Ambulance Tracking & Dispatch.</span>
+      </h1>
+
+      <p class="hero-description">
+        ResQ Pulse is an intelligent emergency logistics platform bridging citizens, ambulances, and trauma centers. Powered by Haversine dispatch algorithms and real-time geospatial telemetry for instant mission coordination.
+      </p>
+
+      <div class="hero-actions">
+        <a href="{{ url_for('emergencies.public_register') }}" class="btn-hero-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          Request Emergency Ambulance
+        </a>
+
+        <a href="{{ url_for('dashboard.index') }}" class="btn-hero-secondary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          Open Operations Console
+        </a>
+      </div>
+
+      <div style="font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 8px;">
+        <span style="color: #10b981;">✓</span> Full SQLite persistence
+        <span style="color: #10b981;">✓</span> Smart Dispatch Assist Engine
+        <span style="color: #10b981;">✓</span> OpenStreetMap Integration
+      </div>
+    </div>
+
+    <!-- Operations Map Preview Frame -->
+    <div class="hero-map-frame">
+      <div class="map-frame-header">
+        <div style="font-size: 13px; font-weight: 700; color: #f8fafc;">Bengaluru Operations Radar</div>
+        <div class="live-badge">
+          <span class="live-dot"></span> LIVE FLEET FEED
+        </div>
+      </div>
+
+      <div id="landingMiniMap" class="hero-mini-map"></div>
+
+      <div class="hero-stats-strip">
+        <div class="hero-stat-box">
+          <div class="hero-stat-num">{{ total_amb }}</div>
+          <div class="hero-stat-label">Active Fleet</div>
+        </div>
+        <div class="hero-stat-box">
+          <div class="hero-stat-num" style="color: #10b981;">{{ avail_amb }}</div>
+          <div class="hero-stat-label">Available Now</div>
+        </div>
+        <div class="hero-stat-box">
+          <div class="hero-stat-num" style="color: #38bdf8;">{{ hosp_count }}</div>
+          <div class="hero-stat-label">Trauma Hubs</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature Highlights -->
+  <section class="features-section" id="features">
+    <div class="section-header">
+      <span class="section-badge">Command Intelligence</span>
+      <h2 class="section-title">Engineered for Rapid Emergency Response</h2>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon-box">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+          </svg>
+        </div>
+        <h3 class="feature-title">Smart Dispatch Assist</h3>
+        <p class="feature-text">
+          Instant candidate ranking using the spherical Haversine formula and assumed city velocity. Provides transparent decision rationale and atomic lock transactions to eliminate double booking.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-box" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+            <line x1="8" y1="2" x2="8" y2="18"></line>
+            <line x1="16" y1="6" x2="16" y2="22"></line>
+          </svg>
+        </div>
+        <h3 class="feature-title">Live Leaflet Tracking</h3>
+        <p class="feature-text">
+          Interactive radar visualization rendered via Leaflet and OpenStreetMap. Status-colored beacons, automatic bounds adjustment, focus selectors, and optional realistic simulation loops.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-box" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
+            <path d="M12 7v6M9 10h6"></path>
+          </svg>
+        </div>
+        <h3 class="feature-title">Hospital Directory & Proximity</h3>
+        <p class="feature-text">
+          Trauma center locator with clinical facility filters (ICU, Cardiac, Burn Unit). Computes straight-line distances from incident coordinates for expedited handover routing.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-box" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+          </svg>
+        </div>
+        <h3 class="feature-title">Fleet Health & Telemetry Audit</h3>
+        <p class="feature-text">
+          Monitors vehicle readiness and flags stale GPS coordinates exceeding 15 minutes. Includes secure formula-injection protected CSV auditing for administrative reporting.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Workflow Section -->
+  <section class="workflow-section" id="workflow">
+    <div class="workflow-container">
+      <div class="section-header">
+        <span class="section-badge">Operational Lifecycle</span>
+        <h2 class="section-title">How ResQ Pulse Coordinates Emergencies</h2>
+      </div>
+
+      <div class="workflow-steps">
+        <div class="step-card">
+          <span class="step-num">STEP 01</span>
+          <h4 class="step-title">Emergency Intake</h4>
+          <p class="step-text">
+            Citizen or operator registers caller info, GPS/address, and category. System applies transparent rule-based priority triage (Cardiac/Accident -> High).
+          </p>
+        </div>
+
+        <div class="step-card">
+          <span class="step-num">STEP 02</span>
+          <h4 class="step-title">Smart Dispatch Assist</h4>
+          <p class="step-text">
+            Haversine engine evaluates all 'Available' fleet units, computes distance & estimated ETA, and highlights the optimal ALS/BLS candidate for dispatcher sign-off.
+          </p>
+        </div>
+
+        <div class="step-card">
+          <span class="step-num">STEP 03</span>
+          <h4 class="step-title">En Route Telemetry</h4>
+          <p class="step-text">
+            Assigned unit transitions to 'Busy'. Real-time coordinates update on command center radar. Requesters track status via privacy-safe public reference.
+          </p>
+        </div>
+
+        <div class="step-card">
+          <span class="step-num">STEP 04</span>
+          <h4 class="step-title">Hospital Handover</h4>
+          <p class="step-text">
+            Ambulance completes transport at nearest specialized medical facility. Vehicle status automatically returns to 'Available' for the next mission.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Technology Stack Badges -->
+  <section class="tech-section" id="tech">
+    <span class="section-badge">Robust Mini-Project Foundation</span>
+    <h2 class="section-title">Built with Production-Grade Principles</h2>
+    <div class="tech-badges-list">
+      <div class="tech-pill">Python Flask 3.0</div>
+      <div class="tech-pill">SQLite + Foreign Keys</div>
+      <div class="tech-pill">Leaflet.js 1.9</div>
+      <div class="tech-pill">OpenStreetMap Tiles</div>
+      <div class="tech-pill">Chart.js Analytics</div>
+      <div class="tech-pill">Werkzeug Password Hashing</div>
+      <div class="tech-pill">CSRF Session Protection</div>
+      <div class="tech-pill">CWE-1236 CSV Sanitization</div>
+      <div class="tech-pill">Haversine Distance Engine</div>
+      <div class="tech-pill">Automated Pytest Suite</div>
+    </div>
+  </section>
+
+  <!-- Footer & College Viva Disclaimer -->
+  <footer class="landing-footer">
+    <div class="footer-disclaimer-box">
+      <strong>⚠️ ACADEMIC PROJECT DEMONSTRATION NOTICE:</strong><br>
+      ResQ Pulse (Smart Ambulance Tracking System) is a simulated college engineering project. It does not contact actual 108/911 emergency services, dispatch real road ambulances, or process authentic medical patient data. All vehicle positions and hospital registries represent simulated educational demonstration models for the Bengaluru metropolitan region.
+    </div>
+    <div class="footer-text">
+      &copy; {{ current_year }} ResQ Pulse — College Mini-Project Demonstration System. All rights reserved.
+    </div>
+  </footer>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      try {
+        var miniMap = L.map("landingMiniMap", {
+          zoomControl: false,
+          attributionControl: false
+        }).setView([12.9716, 77.5946], 12);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 18
+        }).addTo(miniMap);
+
+        // Fetch live demo vehicles to show on mini map
+        fetch("/api/v1/hospitals/api/list")
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.hospitals) {
+              data.hospitals.forEach(function(h) {
+                L.circleMarker([h.latitude, h.longitude], {
+                  radius: 6,
+                  fillColor: "#0284c7",
+                  color: "#ffffff",
+                  weight: 2,
+                  fillOpacity: 0.9
+                }).bindPopup("🏥 " + h.name).addTo(miniMap);
+              });
+            }
+          }).catch(function() {});
+      } catch(e) {
+        console.warn("Mini map init error:", e);
+      }
+    });
+  </script>
+</body>
+</html>

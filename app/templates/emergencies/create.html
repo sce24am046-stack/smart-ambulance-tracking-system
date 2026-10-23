@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Register Call{% endblock %}
+{% block page_title %}Log Incident — Dispatch Intake Console{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>Emergency Incident Intake Form</span>
+      </div>
+      <a href="{{ url_for('emergencies.index') }}" class="btn btn-secondary btn-sm">Cancel</a>
+    </div>
+
+    <div class="panel-body">
+      <form method="POST" action="{{ url_for('emergencies.create') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label for="patient_name" class="form-label required">Patient / Caller Name</label>
+            <input 
+              type="text" 
+              id="patient_name" 
+              name="patient_name" 
+              class="form-control" 
+              placeholder="Full Name" 
+              value="{{ form.patient_name or '' }}" 
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="contact_number" class="form-label required">Contact Phone Number</label>
+            <input 
+              type="tel" 
+              id="contact_number" 
+              name="contact_number" 
+              class="form-control" 
+              placeholder="+91-98765-00000" 
+              value="{{ form.contact_number or '' }}" 
+              required
+            >
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label for="emergency_category" class="form-label required">Emergency Category</label>
+            <select id="emergency_category" name="emergency_category" class="form-control" required>
+              {% for cat in categories %}
+                <option value="{{ cat }}" {% if form.emergency_category == cat %}selected{% endif %}>{{ cat }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="priority" class="form-label">Dispatcher Priority Override (Optional)</label>
+            <select id="priority" name="priority" class="form-control">
+              <option value="">Auto-Suggest from Category</option>
+              {% for pr in priorities %}
+                <option value="{{ pr }}" {% if form.priority == pr %}selected{% endif %}>{{ pr }} Priority</option>
+              {% endfor %}
+            </select>
+            <div class="form-hint">Dispatcher clinical judgement takes precedence over auto-triage.</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="pickup_address" class="form-label required">Pickup Address</label>
+          <input 
+            type="text" 
+            id="pickup_address" 
+            name="pickup_address" 
+            class="form-control" 
+            placeholder="Street address, building, landmarks, Bengaluru..." 
+            value="{{ form.pickup_address or '' }}" 
+            required
+          >
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label for="pickup_latitude" class="form-label required">Pickup Latitude</label>
+            <input 
+              type="number" 
+              step="any" 
+              id="pickup_latitude" 
+              name="pickup_latitude" 
+              class="form-control" 
+              value="{{ form.pickup_latitude or '12.9716' }}" 
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="pickup_longitude" class="form-label required">Pickup Longitude</label>
+            <input 
+              type="number" 
+              step="any" 
+              id="pickup_longitude" 
+              name="pickup_longitude" 
+              class="form-control" 
+              value="{{ form.pickup_longitude or '77.5946' }}" 
+              required
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="notes" class="form-label">Dispatcher Medical Notes & Caller Description</label>
+          <textarea 
+            id="notes" 
+            name="notes" 
+            class="form-control" 
+            placeholder="Document vital signs, bleeding, conscious state, trapped victims, hazards..."
+          >{{ form.notes or '' }}</textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+          <a href="{{ url_for('emergencies.index') }}" class="btn btn-secondary">Cancel</a>
+          <button type="submit" class="btn btn-danger">Register & Open Smart Dispatch</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

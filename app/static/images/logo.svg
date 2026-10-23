@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" fill="none">
+  <defs>
+    <linearGradient id="shieldGrad" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#EF4444" />
+      <stop offset="100%" stop-color="#991B1B" />
+    </linearGradient>
+    <linearGradient id="pulseGrad" x1="10" y1="24" x2="38" y2="24" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#14B8A6" />
+      <stop offset="100%" stop-color="#38BDF8" />
+    </linearGradient>
+  </defs>
+  <!-- Shield Emblem Frame -->
+  <path d="M24 4L8 10V22C8 32.5 14.8 42.1 24 44.5C33.2 42.1 40 32.5 40 22V10L24 4Z" fill="#0F172A" stroke="url(#shieldGrad)" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Emergency Medical Cross Accent -->
+  <path d="M24 13V21M24 27V35M16 24H20M28 24H32" stroke="#EF4444" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Dynamic Pulse Lifeline Wave -->
+  <path d="M12 24H18L21 16L24 32L27 20L30 24H36" stroke="url(#pulseGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
