@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: resq-pulse-ambulance
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn run:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ROUTING_PROVIDER
+        value: osrm

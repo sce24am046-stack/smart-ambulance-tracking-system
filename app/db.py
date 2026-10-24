@@ -41,6 +41,13 @@ def migrate_db(db=None):
     if db is None:
         db = get_db()
 
+    # If the database is completely empty (fresh cloud deployment), auto-initialize schema and demo seed!
+    cur = db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='administrators'")
+    if not cur.fetchone():
+        _execute_schema()
+        _execute_seed()
+        return
+
     # 1. Ambulances Table Migrations
     amb_cols = [row[1] for row in db.execute("PRAGMA table_info(ambulances)").fetchall()]
     if amb_cols and "last_telemetry_received_at" not in amb_cols:
