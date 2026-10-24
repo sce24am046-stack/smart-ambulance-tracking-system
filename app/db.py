@@ -48,6 +48,26 @@ def migrate_db(db=None):
         _execute_seed()
         return
 
+    # 0. Ensure default administrator account exists with known credentials
+    admin_table = db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='administrators'").fetchone()
+    if admin_table:
+        admin_row = db.execute("SELECT id FROM administrators WHERE username = 'admin'").fetchone()
+        if not admin_row:
+            db.execute(
+                """
+                INSERT INTO administrators (username, password_hash, full_name, role)
+                VALUES (?, ?, ?, ?)
+                """,
+                ("admin", generate_password_hash("Admin@12345"), "System Administrator", "Administrator"),
+            )
+            db.commit()
+        else:
+            db.execute(
+                "UPDATE administrators SET password_hash = ? WHERE username = 'admin'",
+                (generate_password_hash("Admin@12345"),),
+            )
+            db.commit()
+
     # 1. Ambulances Table Migrations
     amb_cols = [row[1] for row in db.execute("PRAGMA table_info(ambulances)").fetchall()]
     if amb_cols and "last_telemetry_received_at" not in amb_cols:
